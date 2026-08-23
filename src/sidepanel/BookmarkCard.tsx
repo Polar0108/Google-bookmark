@@ -26,7 +26,7 @@ export function BookmarkCard({
   onDelete,
   onToggleSelected,
 }: BookmarkCardProps) {
-  const coverUrl = useCoverUrl(bookmark.meta?.coverAssetId);
+  const coverUrl = useCoverUrl(viewMode === 'masonry' ? bookmark.meta?.coverAssetId : undefined);
   const domain = bookmark.meta?.domain || safeDomain(bookmark.url);
   const favicon = bookmark.url ? getFaviconUrl(bookmark.url) : undefined;
 
@@ -41,7 +41,7 @@ export function BookmarkCard({
 
   return (
     <article
-      className={`bookmark-card bookmark-card--${viewMode}${selected ? ' is-selected' : ''}`}
+      className={`bookmark-card bookmark-card--${viewMode}${selectMode ? ' is-selecting' : ''}${selected ? ' is-selected' : ''}`}
       data-bookmark-id={bookmark.id}
     >
       {selectMode ? (
@@ -67,7 +67,11 @@ export function BookmarkCard({
         }}
       >
         <span className="bookmark-card__cover" aria-hidden="true">
-          {coverUrl ? (
+          {viewMode === 'list' ? (
+            <span className="bookmark-card__favicon" data-domain={domain}>
+              {favicon ? <img src={favicon} alt="" /> : domain.slice(0, 1).toUpperCase()}
+            </span>
+          ) : coverUrl ? (
             <img src={coverUrl} alt="" />
           ) : (
             <span className="bookmark-card__placeholder" data-domain={domain}>

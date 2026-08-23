@@ -4,7 +4,6 @@ import { deleteBookmark, moveBookmark, sortBookmarks } from '../data/bookmarks';
 import { Icon } from '../components/Icon';
 import { loadSettings, saveSettings } from '../data/settings';
 import { useBookmarks } from '../hooks/useBookmarks';
-import { autoFillBookmarkCover, cancelPendingCoverCapture, waitForTabReady } from '../services/autoCover';
 import { captureCurrentTab, requestCaptureAccess } from '../services/capture';
 import { recordBookmarkOpened, saveBookmarkCover } from '../services/enhancements';
 import { updateRemoteBookmarkPreview } from '../services/remotePreview';
@@ -16,6 +15,7 @@ import { CaptureDialog } from './CaptureDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EditDialog } from './EditDialog';
 import { FolderDialog } from './FolderDialog';
+import { SortMenu } from './SortMenu';
 import { TagDialog } from './TagDialog';
 
 export function SidePanelApp() {
@@ -80,6 +80,17 @@ export function SidePanelApp() {
     await saveSettings({ sortMode });
   };
 
+  const openSettings = async (): Promise<void> => {
+    try {
+      await chrome.tabs.create({
+        url: chrome.runtime.getURL('/options.html'),
+        active: true,
+      });
+    } catch (reason) {
+      setToast(reason instanceof Error ? reason.message : '无法打开设置页面。');
+    }
+  };
+
   const openBookmark = async (bookmark: BookmarkViewModel, newTab: boolean): Promise<void> => {
     if (!bookmark.url) return;
     const safety = getNavigationSafety(bookmark.url);
@@ -90,24 +101,16 @@ export function SidePanelApp() {
     if (safety === 'custom' && !window.confirm(`使用外部应用打开这个网址？\n\n${bookmark.url}`)) return;
     try {
       const shouldOpenNewTab = newTab || Boolean(settings?.openInNewTab);
-      let openedTab: chrome.tabs.Tab;
       if (shouldOpenNewTab) {
-        openedTab = await chrome.tabs.create({ url: bookmark.url, active: true });
+        await chrome.tabs.create({ url: bookmark.url, active: true });
       } else {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab?.id !== undefined) {
-          cancelPendingCoverCapture(tab.id);
           const updatedTab = await chrome.tabs.update(tab.id, { url: bookmark.url });
           if (!updatedTab) throw new Error('无法打开书签。');
-          openedTab = updatedTab;
-        } else openedTab = await chrome.tabs.create({ url: bookmark.url, active: true });
+        } else await chrome.tabs.create({ url: bookmark.url, active: true });
       }
       void recordBookmarkOpened(bookmark).catch(() => undefined);
-      if (!bookmark.meta?.coverAssetId && openedTab.id !== undefined) {
-        void autoFillBookmarkCover(bookmark, openedTab.id).then((updated) => {
-          if (updated) void refresh();
-        });
-      }
     } catch (reason) {
       setToast(reason instanceof Error ? reason.message : '无法打开书签。');
     }
@@ -122,14 +125,8 @@ export function SidePanelApp() {
       if (!isSameWebsiteFamily(bookmark.url, tab.url)) {
         throw new Error('当前页面与该书签不属于同一网站，不能作为它的封面。');
       }
-      cancelPendingCoverCapture(tab.id);
       const granted = await requestCaptureAccess();
       if (!granted) throw new Error('需要允许访问网页，才能保存当前页面截图。');
-      await waitForTabReady(tab.id);
-      const [readyTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (readyTab?.id !== tab.id || !readyTab.url || !isSameWebsiteFamily(bookmark.url, readyTab.url)) {
-        throw new Error('等待期间页面已切换到其他网站，请返回原网站后重试。');
-      }
       const result = await captureCurrentTab();
       if (!isSameWebsiteFamily(bookmark.url, result.metadata.url)) {
         throw new Error('截图期间页面已切换到其他网站，请返回原网站后重试。');
@@ -168,7 +165,6 @@ export function SidePanelApp() {
     let cursor = 0;
     let done = 0;
     let success = 0;
-    let refreshChain = Promise.resolve();
     setCoverSync({ done, success, total: targets.length });
 
     const worker = async (): Promise<void> => {
@@ -180,8 +176,6 @@ export function SidePanelApp() {
         const result = await updateRemoteBookmarkPreview(bookmark);
         if (result.updated) {
           success += 1;
-          refreshChain = refreshChain.then(refresh);
-          await refreshChain;
         }
         done += 1;
         setCoverSync({ done, success, total: targets.length });
@@ -189,8 +183,8 @@ export function SidePanelApp() {
     };
 
     try {
-      await Promise.all(Array.from({ length: Math.min(4, targets.length) }, worker));
-      await refreshChain;
+      await Promise.all(Array.from({ length: Math.min(6, targets.length) }, worker));
+      await refresh();
       const failed = targets.length - success;
       setToast(failed
         ? `已刷新 ${success} 个封面，${failed} 个网站处理失败`
@@ -265,20 +259,15 @@ export function SidePanelApp() {
                 <Icon name="refresh" size={14} />
               </button>
             ) : null}
-            <span>{visibleBookmarks.length}</span>
+            <span>{coverSync ? `${coverSync.done}/${coverSync.total}` : visibleBookmarks.length}</span>
           </div>
           <div className="bookmark-toolbar__actions">
-            <select value={settings.sortMode} onChange={(event) => void setSortMode(event.target.value as SortMode)} aria-label="书签排序">
-              <option value="created-desc">最新收藏</option>
-              <option value="created-asc">最早收藏</option>
-              <option value="title">标题</option>
-              <option value="recently-opened">最近使用</option>
-            </select>
+            <SortMenu value={settings.sortMode} onChange={(value) => void setSortMode(value)} />
             <button className="mode-button" type="button" aria-label="新建文件夹" onClick={() => setFolderDialogOpen(true)}><Icon name="folder-plus" size={15} /></button>
             <button className="mode-button" type="button" aria-label="列表模式" aria-pressed={settings.viewMode === 'list'} onClick={() => void setViewMode('list')}><Icon name="list" size={15} /></button>
             <button className="mode-button" type="button" aria-label="视觉模式" aria-pressed={settings.viewMode === 'masonry'} onClick={() => void setViewMode('masonry')}><Icon name="grid" size={15} /></button>
             <button className="mode-button" type="button" aria-label="多选" aria-pressed={selectMode} onClick={() => { setSelectMode((value) => !value); setSelectedIds(new Set()); }}><Icon name="check-square" size={15} /></button>
-            <button className="mode-button" type="button" onClick={() => chrome.runtime.openOptionsPage()} aria-label="打开设置"><Icon name="settings" size={15} /></button>
+            <button className="mode-button" type="button" onClick={() => void openSettings()} aria-label="在新标签页打开设置"><Icon name="settings" size={15} /></button>
           </div>
         </header>
 

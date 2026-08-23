@@ -2,8 +2,8 @@ import type { BookmarkViewModel } from '../types/bookmark';
 import { saveRemoteBookmarkPreview } from './enhancements';
 import { createGeneratedCover } from './image';
 
-const PAGE_TIMEOUT_MS = 10_000;
-const IMAGE_TIMEOUT_MS = 12_000;
+const PAGE_TIMEOUT_MS = 7_000;
+const IMAGE_TIMEOUT_MS = 8_000;
 const MAX_HTML_BYTES = 3 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 

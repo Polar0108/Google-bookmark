@@ -48,7 +48,7 @@ describe('BookmarkCard', () => {
   it('toggles selection instead of navigating in select mode', () => {
     const onOpen = vi.fn();
     const onToggleSelected = vi.fn();
-    render(
+    const { container } = render(
       <BookmarkCard
         bookmark={bookmark}
         viewMode="list"
@@ -64,5 +64,35 @@ describe('BookmarkCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /^打开 Visual bookmark test page$/i }));
     expect(onToggleSelected).toHaveBeenCalledWith(bookmark.id);
     expect(onOpen).not.toHaveBeenCalled();
+    expect(container.querySelector('.bookmark-card--list.is-selecting')).toBeInTheDocument();
+    expect(container.querySelector('.bookmark-card__check')).toBeInTheDocument();
+  });
+
+  it('uses the website favicon instead of a saved screenshot in list mode', () => {
+    const { container } = render(
+      <BookmarkCard
+        bookmark={{
+          ...bookmark,
+          meta: {
+            ...bookmark.meta!,
+            coverAssetId: 'saved-screenshot',
+            coverSource: 'screenshot',
+          },
+        }}
+        viewMode="list"
+        selected={false}
+        selectMode={false}
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRecapture={vi.fn()}
+        onDelete={vi.fn()}
+        onToggleSelected={vi.fn()}
+      />,
+    );
+
+    const favicon = container.querySelector<HTMLImageElement>('.bookmark-card__favicon img');
+    expect(favicon).toBeInTheDocument();
+    expect(favicon?.src).toContain('/_favicon/');
+    expect(container.querySelector('.bookmark-card__cover > img')).not.toBeInTheDocument();
   });
 });
