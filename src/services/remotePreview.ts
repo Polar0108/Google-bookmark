@@ -12,6 +12,12 @@ export interface RemotePreviewResult {
   reason?: string;
 }
 
+export interface ExtractedPreviewMetadata {
+  imageReference?: string;
+  description?: string;
+  siteName?: string;
+}
+
 export async function updateRemoteBookmarkPreview(
   bookmark: BookmarkViewModel,
 ): Promise<RemotePreviewResult> {
@@ -35,23 +41,10 @@ export async function updateRemoteBookmarkPreview(
 
     const html = await pageResponse.text();
     if (new Blob([html]).size > MAX_HTML_BYTES) throw new Error('网页内容过大');
-    const documentNode = new DOMParser().parseFromString(html, 'text/html');
-    description = firstContent(documentNode, [
-      'meta[property="og:description"]',
-      'meta[name="description"]',
-      'meta[name="twitter:description"]',
-    ]);
-    siteName = firstContent(documentNode, [
-      'meta[property="og:site_name"]',
-      'meta[name="application-name"]',
-    ]);
-    const imageReference = firstContent(documentNode, [
-      'meta[property="og:image:secure_url"]',
-      'meta[property="og:image"]',
-      'meta[name="twitter:image"]',
-      'meta[name="twitter:image:src"]',
-      'link[rel="image_src"]',
-    ]);
+    const extracted = extractPreviewMetadata(html);
+    description = extracted.description;
+    siteName = extracted.siteName;
+    const imageReference = extracted.imageReference;
     if (imageReference) {
       const imageUrl = new URL(imageReference, pageResponse.url || bookmark.url);
       if (!['http:', 'https:'].includes(imageUrl.protocol)) throw new Error('预览图网址不受支持');
@@ -90,13 +83,83 @@ function compactMetadata(description?: string, siteName?: string): { description
   };
 }
 
-function firstContent(documentNode: Document, selectors: string[]): string | undefined {
-  for (const selector of selectors) {
-    const element = documentNode.querySelector<HTMLMetaElement | HTMLLinkElement>(selector);
-    const value = element instanceof HTMLMetaElement ? element.content : element?.getAttribute('href');
-    if (value?.trim()) return value.trim();
+export function extractPreviewMetadata(html: string): ExtractedPreviewMetadata {
+  const headMatch = /<head\b[^>]*>([\s\S]*?)<\/head\s*>/i.exec(html);
+  const searchableHtml = (headMatch?.[1] ?? html.slice(0, 512 * 1024))
+    .replace(/<!--([\s\S]*?)-->/g, '')
+    .replace(/<(script|style|noscript|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+  const metaValues = new Map<string, string>();
+  let imageSource: string | undefined;
+
+  for (const match of searchableHtml.matchAll(/<(meta|link)\b[^>]*>/gi)) {
+    const tagName = match[1]?.toLowerCase();
+    const attributes = parseAttributes(match[0]);
+    if (tagName === 'meta') {
+      const key = (attributes.property || attributes.name)?.toLowerCase();
+      const content = attributes.content?.trim();
+      if (key && content && !metaValues.has(key)) metaValues.set(key, content);
+      continue;
+    }
+    const relTokens = attributes.rel?.toLowerCase().split(/\s+/) ?? [];
+    if (!imageSource && relTokens.includes('image_src') && attributes.href?.trim()) {
+      imageSource = attributes.href.trim();
+    }
   }
-  return undefined;
+
+  const imageReference = firstDefined(
+    metaValues.get('og:image:secure_url'),
+    metaValues.get('og:image'),
+    metaValues.get('twitter:image'),
+    metaValues.get('twitter:image:src'),
+    imageSource,
+  );
+  const description = firstDefined(
+    metaValues.get('og:description'),
+    metaValues.get('description'),
+    metaValues.get('twitter:description'),
+  );
+  const siteName = firstDefined(
+    metaValues.get('og:site_name'),
+    metaValues.get('application-name'),
+  );
+  return {
+    ...(imageReference ? { imageReference } : {}),
+    ...(description ? { description } : {}),
+    ...(siteName ? { siteName } : {}),
+  };
+}
+
+function parseAttributes(tag: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  const attributePattern = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const match of tag.matchAll(attributePattern)) {
+    const name = match[1]?.toLowerCase();
+    if (!name || name === 'meta' || name === 'link') continue;
+    const rawValue = match[2] ?? match[3] ?? match[4] ?? '';
+    attributes[name] = decodeHtmlEntities(rawValue);
+  }
+  return attributes;
+}
+
+function decodeHtmlEntities(value: string): string {
+  const namedEntities: Record<string, string> = {
+    amp: '&', apos: "'", gt: '>', lt: '<', quot: '"',
+  };
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|apos|gt|lt|quot);/gi, (entity, code: string) => {
+    if (code[0] !== '#') return namedEntities[code.toLowerCase()] ?? entity;
+    const isHex = code[1]?.toLowerCase() === 'x';
+    const valueStart = isHex ? 2 : 1;
+    const codePoint = Number.parseInt(code.slice(valueStart), isHex ? 16 : 10);
+    try {
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity;
+    } catch {
+      return entity;
+    }
+  });
+}
+
+function firstDefined(...values: Array<string | undefined>): string | undefined {
+  return values.find((value) => Boolean(value?.trim()))?.trim();
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {

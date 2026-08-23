@@ -28,7 +28,7 @@
 
 ## 打包
 
-执行 `pnpm zip`。Chrome Web Store 上传文件位于 `.output/visual-bookmark-0.1.9-chrome.zip`。
+执行 `pnpm zip`。Chrome Web Store 上传文件位于 `.output/visual-bookmark-0.1.10-chrome.zip`。
 
 ## 开发命令
 

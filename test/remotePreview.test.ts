@@ -2,7 +2,7 @@ import type { Mock } from 'vitest';
 
 import { saveRemoteBookmarkPreview } from '../src/services/enhancements';
 import { createGeneratedCover } from '../src/services/image';
-import { updateRemoteBookmarkPreview } from '../src/services/remotePreview';
+import { extractPreviewMetadata, updateRemoteBookmarkPreview } from '../src/services/remotePreview';
 import type { BookmarkViewModel } from '../src/types/bookmark';
 
 vi.mock('../src/services/enhancements', () => ({
@@ -54,6 +54,25 @@ describe('remote bookmark previews', () => {
       expect.any(Blob),
       { description: 'Saved page description', siteName: 'Example Site' },
     );
+  });
+
+  it('extracts metadata as text without parsing or loading remote script resources', () => {
+    const parser = vi.fn(() => { throw new Error('DOMParser must not be used'); });
+    vi.stubGlobal('DOMParser', parser);
+    expect(extractPreviewMetadata(`
+      <html><head>
+        <link rel="modulepreload" href="https://chatgpt.com/cdn/assets/blocked.js">
+        <script src="https://chatgpt.com/cdn/assets/blocked.js"></script>
+        <meta content='https://cdn.example.com/cover.jpg?x=1&amp;y=2' property='og:image'>
+        <meta content="Example &amp; Product" property="og:site_name">
+        <meta name="description" content="Safe &#38; local">
+      </head></html>
+    `)).toEqual({
+      imageReference: 'https://cdn.example.com/cover.jpg?x=1&y=2',
+      description: 'Safe & local',
+      siteName: 'Example & Product',
+    });
+    expect(parser).not.toHaveBeenCalled();
   });
 
   it('creates a stable local cover when a site has no public preview image', async () => {
