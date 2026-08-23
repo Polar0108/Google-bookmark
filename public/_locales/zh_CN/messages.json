@@ -1,0 +1,6 @@
+{
+  "appName": { "message": "Visual Bookmark" },
+  "appDescription": { "message": "把 Chrome 原生书签变成可搜索的视觉侧边栏。" },
+  "openSidePanel": { "message": "打开 Visual Bookmark" }
+}
+

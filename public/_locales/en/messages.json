@@ -1,0 +1,6 @@
+{
+  "appName": { "message": "Visual Bookmark" },
+  "appDescription": { "message": "Turn native Chrome bookmarks into a searchable visual side panel." },
+  "openSidePanel": { "message": "Open Visual Bookmark" }
+}
+
