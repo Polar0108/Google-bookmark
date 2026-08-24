@@ -27,6 +27,9 @@ Object.defineProperty(globalThis, 'chrome', {
       request: vi.fn(),
       contains: vi.fn(),
     },
+    sidePanel: {
+      setPanelBehavior: vi.fn(),
+    },
     bookmarks: {
       getTree: vi.fn(),
       search: vi.fn(),

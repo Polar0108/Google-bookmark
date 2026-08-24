@@ -1,18 +1,16 @@
 import { removeBookmarkEnhancements } from '../src/data/database';
 import { captureNativeBookmarkCover } from '../src/services/nativeBookmarkCover';
+import { enableActionIconPanelToggle } from '../src/services/sidePanel';
 import type { PageMetadata } from '../src/types/bookmark';
 import { isRuntimeMessage } from '../src/types/messages';
 import { getNavigationSafety } from '../src/utils/url';
 
 export default defineBackground(() => {
+  void enableActionIconPanelToggle().catch(() => undefined);
+
   chrome.runtime.onInstalled.addListener((details) => {
     void chrome.sidePanel.setOptions({ path: 'sidepanel.html', enabled: true });
     if (details.reason === 'install') void chrome.runtime.openOptionsPage();
-  });
-
-  chrome.action.onClicked.addListener((tab) => {
-    if (!tab.id || tab.windowId === undefined) return;
-    void chrome.sidePanel.open({ windowId: tab.windowId });
   });
 
   chrome.bookmarks.onCreated.addListener((id, node) => {

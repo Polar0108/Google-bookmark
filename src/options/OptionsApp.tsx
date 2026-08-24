@@ -57,7 +57,7 @@ export function OptionsApp() {
         <section className="onboarding-card">
           <span>首次使用</span>
           <h2>从工具栏打开 Visual Bookmark</h2>
-          <p>请在 Chrome 扩展菜单中固定 Visual Bookmark。点击图标会打开扩展专属侧边栏，并临时授权读取当前页面。Chrome 自带的“书签”侧边栏不会被修改。</p>
+          <p>请在 Chrome 扩展菜单中固定 Visual Bookmark。点击图标会展开扩展专属侧边栏，再次点击同一图标即可收起，并临时授权读取当前页面。Chrome 自带的“书签”侧边栏不会被修改。</p>
           <button type="button" onClick={() => void update({ onboardingComplete: true })}>我知道了</button>
         </section>
       ) : null}

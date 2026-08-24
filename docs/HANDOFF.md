@@ -21,6 +21,7 @@ Visual Bookmark 是一个本地优先的 Chrome 侧边栏扩展。Chrome 原生�
 - 列表模式只显示 18px 网站 favicon，不读取截图；视觉模式继续显示 16:10 截图。
 - 排序使用从触发控件左边缘对齐展开的不透明暗色菜单；列表多选框位于独立左侧列，图标和标题随之右移。
 - 点击设置按钮会新建标签页打开 `options.html`，不会覆盖当前网页。
+- 地址栏扩展图标使用 Chrome 原生 `openPanelOnActionClick` 行为，同一图标可切换侧边栏展开和收起。
 - 扩展品牌图标使用深石墨底、暖白图片缩略图和冷蓝书签页签；主图形在 Chrome 地址栏的固定 16px 区域内仅保留约 1px 安全边距。源文件为 `public/icon/source.svg`，构建使用 16/32/48/128px PNG。
 - Chrome 原生书签始终是书签内容的唯一事实来源，扩展不会建立独立的云端书签数据库。
 
@@ -76,6 +77,7 @@ pnpm zip
 | `src/sidepanel/SortMenu.tsx` | 自定义暗色排序下拉菜单 |
 | `src/services/capture.ts` | 当前活动标签页元数据和可见区域截图 |
 | `src/services/nativeBookmarkCover.ts` | Chrome 原生收藏事件的即时截图、页面一致性校验与封面保存 |
+| `src/services/sidePanel.ts` | 配置地址栏扩展图标原生切换侧边栏展开/收起 |
 | `src/services/remotePreview.ts` | 批量读取公开预览图与生成封面兜底 |
 | `src/services/enhancements.ts` | 封面、标签和增强元数据事务写入 |
 | `src/services/image.ts` | 16:10 裁切、WebP 编码、favicon 与生成封面 |
@@ -134,7 +136,7 @@ pnpm zip
 
 - TypeScript：通过。
 - ESLint：通过。
-- Vitest：14 个测试文件、54 项测试通过。
+- Vitest：15 个测试文件、55 项测试通过。
 - WXT 生产构建与 ZIP：通过。
 
 每次交付至少运行：
