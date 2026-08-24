@@ -20,6 +20,7 @@ Visual Bookmark 是一个本地优先的 Chrome 侧边栏扩展。Chrome 原生�
 - 列表模式只显示 18px 网站 favicon，不读取截图；视觉模式继续显示 16:10 截图。
 - 排序使用从触发控件左边缘对齐展开的不透明暗色菜单；列表多选框位于独立左侧列，图标和标题随之右移。
 - 点击设置按钮会新建标签页打开 `options.html`，不会覆盖当前网页。
+- 扩展品牌图标使用深石墨底、暖白图片缩略图和冷蓝书签页签；主源文件为 `public/icon/source.svg`，构建使用 16/32/48/128px PNG。
 - Chrome 原生书签始终是书签内容的唯一事实来源，扩展不会建立独立的云端书签数据库。
 
 ## 3. 环境准备
@@ -81,6 +82,7 @@ pnpm zip
 | `src/data/bookmarks.ts` | Chrome 原生书签读取、转换和 CRUD |
 | `src/data/database.ts` | Dexie / IndexedDB schema 与清理逻辑 |
 | `src/styles/global.css` | 侧边栏暗色设计令牌和响应式布局 |
+| `public/icon/` | 扩展品牌 SVG 源文件与 Chrome 所需的多尺寸 PNG |
 | `test/` | Vitest 单元测试与 React 组件测试 |
 
 更完整的数据模型和运行上下文见 `docs/ARCHITECTURE.md`。
