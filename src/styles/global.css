@@ -88,7 +88,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .folder-strip span { color: var(--muted); }
 
 .bookmark-viewport { min-height: 0; flex: 1; overflow: auto; padding: 8px; scrollbar-color: var(--line) transparent; scrollbar-width: thin; }
-.bookmark-collection { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px; }
+.bookmark-collection { display: grid; width: 100%; align-items: start; gap: 8px; }
+.bookmark-collection--masonry { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 .bookmark-collection--list { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 
 .bookmark-card { position: relative; width: 100%; min-width: 0; border: 0; border-radius: 10px; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / 10%); transition: box-shadow .15s ease, transform .15s ease; }
@@ -178,7 +179,6 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @container (max-width: 279px) {
-  .bookmark-collection--masonry { grid-template-columns: minmax(0, 1fr); }
   .sort-menu { display: none; }
   .bookmark-card__copy strong { font-size: 11px; }
 }

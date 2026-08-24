@@ -7,9 +7,13 @@ describe('responsive lane policy', () => {
     [279, 1],
     [280, 2],
     [320, 2],
-    [420, 2],
-    [600, 2],
-    [1200, 2],
+    [415, 2],
+    [416, 3],
+    [420, 3],
+    [551, 3],
+    [552, 4],
+    [600, 4],
+    [1200, 8],
   ] as const)('uses %i px as %i lane(s)', (width, expected) => {
     expect(getLaneCount('masonry', width)).toBe(expected);
   });
