@@ -95,4 +95,29 @@ describe('BookmarkCard', () => {
     expect(favicon?.src).toContain('/_favicon/');
     expect(container.querySelector('.bookmark-card__cover > img')).not.toBeInTheDocument();
   });
+
+  it('shows an immediate screenshot preview while a manual cover refresh is saving', () => {
+    const { container } = render(
+      <BookmarkCard
+        bookmark={bookmark}
+        viewMode="masonry"
+        selected={false}
+        selectMode={false}
+        coverOverrideUrl="data:image/jpeg;base64,instant-preview"
+        refreshing
+        refreshDisabled
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onRecapture={vi.fn()}
+        onDelete={vi.fn()}
+        onToggleSelected={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector<HTMLImageElement>('.bookmark-card__cover > img')?.src)
+      .toBe('data:image/jpeg;base64,instant-preview');
+    const refreshButton = screen.getByRole('button', { name: '正在更新 Visual bookmark test page 的封面' });
+    expect(refreshButton).toBeDisabled();
+    expect(refreshButton).toHaveAttribute('aria-busy', 'true');
+  });
 });

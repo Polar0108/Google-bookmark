@@ -25,6 +25,8 @@ export function SidePanelApp() {
   const [folderId, setFolderId] = useState<string>();
   const [capture, setCapture] = useState<CaptureResult>();
   const [capturing, setCapturing] = useState(false);
+  const [recapturingId, setRecapturingId] = useState<string>();
+  const [coverOverrides, setCoverOverrides] = useState<Map<string, string>>(() => new Map());
   const [editTarget, setEditTarget] = useState<BookmarkViewModel>();
   const [deleteTargets, setDeleteTargets] = useState<BookmarkViewModel[]>([]);
   const [deleting, setDeleting] = useState(false);
@@ -80,6 +82,16 @@ export function SidePanelApp() {
     await saveSettings({ sortMode });
   };
 
+  const updateCoverOverride = (bookmarkId: string, dataUrl?: string): void => {
+    setCoverOverrides((previous) => {
+      if (!dataUrl && !previous.has(bookmarkId)) return previous;
+      const next = new Map(previous);
+      if (dataUrl) next.set(bookmarkId, dataUrl);
+      else next.delete(bookmarkId);
+      return next;
+    });
+  };
+
   const openSettings = async (): Promise<void> => {
     try {
       await chrome.tabs.create({
@@ -117,8 +129,10 @@ export function SidePanelApp() {
   };
 
   const recaptureBookmark = async (bookmark: BookmarkViewModel): Promise<void> => {
-    if (!bookmark.url) return;
-    setCapturing(true);
+    if (!bookmark.url || capturing || recapturingId) return;
+    let previewUrl: string | undefined;
+    setRecapturingId(bookmark.id);
+    setToast(`正在截取“${bookmark.title}”的当前画面…`);
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab?.id === undefined || !tab.url) throw new Error('无法读取当前网页。');
@@ -132,17 +146,23 @@ export function SidePanelApp() {
         throw new Error('截图期间页面已切换到其他网站，请返回原网站后重试。');
       }
       if (!result.screenshotDataUrl) throw new Error('当前页面无法截图。');
+      previewUrl = result.screenshotDataUrl;
+      updateCoverOverride(bookmark.id, previewUrl);
       await saveBookmarkCover(bookmark, result.screenshotDataUrl, 'screenshot');
       setToast('封面已更新为当前网站页面');
-      await refresh();
+      void refresh().finally(() => {
+        window.setTimeout(() => updateCoverOverride(bookmark.id), 150);
+      });
     } catch (reason) {
+      if (previewUrl) updateCoverOverride(bookmark.id);
       setToast(reason instanceof Error ? reason.message : '更新封面失败。');
     } finally {
-      setCapturing(false);
+      setRecapturingId(undefined);
     }
   };
 
   const startCapture = async (): Promise<void> => {
+    if (recapturingId) return;
     setCapturing(true);
     try {
       const granted = await requestCaptureAccess();
@@ -287,6 +307,8 @@ export function SidePanelApp() {
             viewMode={settings.viewMode}
             selectedIds={selectedIds}
             selectMode={selectMode}
+            coverOverrides={coverOverrides}
+            recapturingId={recapturingId}
             onOpen={(bookmark, newTab) => void openBookmark(bookmark, newTab)}
             onEdit={setEditTarget}
             onRecapture={(bookmark) => void recaptureBookmark(bookmark)}
@@ -310,7 +332,7 @@ export function SidePanelApp() {
       ) : null}
 
       <footer className="capture-bar">
-        <button className="primary-button primary-button--wide" type="button" disabled={capturing} onClick={() => void startCapture()}>
+        <button className="primary-button primary-button--wide" type="button" disabled={capturing || Boolean(recapturingId)} onClick={() => void startCapture()}>
           <Icon name="plus" size={17} />{capturing ? '正在读取当前页面…' : '添加当前标签页'}
         </button>
       </footer>

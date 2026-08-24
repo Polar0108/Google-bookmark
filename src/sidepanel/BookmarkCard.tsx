@@ -8,6 +8,9 @@ interface BookmarkCardProps {
   viewMode: ViewMode;
   selected: boolean;
   selectMode: boolean;
+  coverOverrideUrl?: string | undefined;
+  refreshing?: boolean;
+  refreshDisabled?: boolean;
   onOpen: (bookmark: BookmarkViewModel, newTab: boolean) => void;
   onEdit: (bookmark: BookmarkViewModel) => void;
   onRecapture: (bookmark: BookmarkViewModel) => void;
@@ -20,6 +23,9 @@ export function BookmarkCard({
   viewMode,
   selected,
   selectMode,
+  coverOverrideUrl,
+  refreshing = false,
+  refreshDisabled = false,
   onOpen,
   onEdit,
   onRecapture,
@@ -71,8 +77,8 @@ export function BookmarkCard({
             <span className="bookmark-card__favicon" data-domain={domain}>
               {favicon ? <img src={favicon} alt="" /> : domain.slice(0, 1).toUpperCase()}
             </span>
-          ) : coverUrl ? (
-            <img src={coverUrl} alt="" />
+          ) : coverOverrideUrl || coverUrl ? (
+            <img src={coverOverrideUrl || coverUrl} alt="" />
           ) : (
             <span className="bookmark-card__placeholder" data-domain={domain}>
               {favicon ? <img src={favicon} alt="" /> : domain.slice(0, 1).toUpperCase()}
@@ -90,7 +96,14 @@ export function BookmarkCard({
             <span>{bookmark.meta?.siteName || domain || '本地书签'}</span>
           </span>
           <span className="bookmark-card__actions">
-            <button className="icon-button icon-button--small" type="button" onClick={() => onRecapture(bookmark)} aria-label={`用当前网站页面更新 ${bookmark.title} 的封面`}><Icon name="refresh" size={13} /></button>
+            <button
+              className={`icon-button icon-button--small${refreshing ? ' is-refreshing' : ''}`}
+              type="button"
+              disabled={refreshDisabled}
+              aria-busy={refreshing}
+              onClick={() => onRecapture(bookmark)}
+              aria-label={refreshing ? `正在更新 ${bookmark.title} 的封面` : `用当前网站页面更新 ${bookmark.title} 的封面`}
+            ><Icon name="refresh" size={13} /></button>
             <button className="icon-button icon-button--small" type="button" onClick={() => onEdit(bookmark)} aria-label={`编辑 ${bookmark.title}`}><Icon name="pencil" size={13} /></button>
             <button className="icon-button icon-button--small danger-text" type="button" disabled={bookmark.isManaged} onClick={() => onDelete(bookmark)} aria-label={`删除 ${bookmark.title}`}><Icon name="trash" size={13} /></button>
           </span>

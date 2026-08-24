@@ -36,17 +36,15 @@ async function captureResolvedTab(tabId: number, tab: chrome.tabs.Tab): Promise<
     throw new Error('无法读取当前页面，请允许扩展访问该网站后重试。');
   }
 
-  const metadata = await extractMetadata(tabId, tab.title || tab.url, tab.url);
-  let screenshotDataUrl: string;
-  try {
-    screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-      format: 'jpeg',
-      quality: 88,
-    });
-  } catch (reason) {
+  const metadataRequest = extractMetadata(tabId, tab.title || tab.url, tab.url);
+  const screenshotRequest = chrome.tabs.captureVisibleTab(tab.windowId, {
+    format: 'jpeg',
+    quality: 88,
+  }).catch((reason: unknown) => {
     const message = reason instanceof Error ? reason.message : 'Chrome 未返回截图';
     throw new Error(`当前页面截图失败：${message}`);
-  }
+  });
+  const [metadata, screenshotDataUrl] = await Promise.all([metadataRequest, screenshotRequest]);
 
   return {
     tabId,

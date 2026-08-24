@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wxt",
     "postinstall": "wxt prepare",
-    "build": "wxt build",
+    "build": "wxt build && node scripts/sync-unpacked.mjs",
     "zip": "wxt zip",
     "check": "tsc --noEmit && eslint .",
     "test": "vitest run",

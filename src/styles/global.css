@@ -72,7 +72,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .sort-menu__trigger svg { display: block; flex: 0 0 auto; transition: transform .15s ease; }
 .sort-menu.is-open .sort-menu__trigger { border-color: var(--line); border-bottom-color: var(--surface); border-radius: 7px 7px 0 0; background: var(--surface); color: var(--text); }
 .sort-menu.is-open .sort-menu__trigger svg { transform: rotate(180deg); }
-.sort-menu__options { position: absolute; z-index: 40; top: calc(100% - 1px); right: 0; width: 112px; padding: 4px; border: 1px solid var(--line); border-radius: 7px 0 7px 7px; background: var(--surface); box-shadow: none; }
+.sort-menu__options { position: absolute; z-index: 40; top: calc(100% - 1px); left: 0; width: 112px; padding: 4px; border: 1px solid var(--line); border-radius: 0 7px 7px 7px; background: var(--surface); box-shadow: none; }
 .sort-menu__options button { display: grid; width: 100%; min-height: 30px; grid-template-columns: 16px minmax(0, 1fr); align-items: center; gap: 6px; padding: 0 7px; border: 0; border-radius: 5px; background: var(--surface); color: var(--muted); font-size: 10px; line-height: 1; text-align: left; cursor: pointer; }
 .sort-menu__options button:hover, .sort-menu__options button:focus-visible { outline: 0; background: var(--surface-soft); color: var(--text); }
 .sort-menu__options button.is-selected { color: var(--text); }
@@ -107,6 +107,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .bookmark-card__footer { display: flex; min-height: 34px; align-items: center; gap: 5px; padding: 4px 5px 4px 9px; border-top: 1px solid var(--line); }
 .bookmark-card__footer .bookmark-card__site { min-width: 28px; flex: 1; }
 .bookmark-card__actions { display: flex; flex: 0 0 auto; align-items: center; gap: 0; }
+.bookmark-card__actions .is-refreshing svg { animation: spin .7s linear infinite; }
 .bookmark-card__check { position: absolute; z-index: 3; top: 6px; left: 6px; display: grid; width: 23px; height: 23px; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); box-shadow: 0 2px 8px rgb(0 0 0 / 12%); }
 .bookmark-card__check input { accent-color: var(--accent); }
 

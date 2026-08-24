@@ -42,10 +42,16 @@ export async function processImageBlob(sourceBlob: Blob): Promise<ProcessedCover
   const crop = calculateCenterCrop(image.width, image.height);
   const width = Math.min(COVER_MAX_WIDTH, Math.round(crop.width));
   const height = Math.round(width / COVER_ASPECT_RATIO);
-  const canvas = document.createElement('canvas');
+  const supportsOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
+  const canvas = supportsOffscreenCanvas
+    ? new OffscreenCanvas(width, height)
+    : document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const context = canvas.getContext('2d', { alpha: false });
+  const context = canvas.getContext('2d', { alpha: false }) as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
   if (!context) throw new Error('Canvas is unavailable.');
   context.drawImage(
     image,
@@ -59,13 +65,15 @@ export async function processImageBlob(sourceBlob: Blob): Promise<ProcessedCover
     height,
   );
   image.close();
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => (result ? resolve(result) : reject(new Error('Image encoding failed.'))),
-      'image/webp',
-      COVER_WEBP_QUALITY,
-    );
-  });
+  const blob = supportsOffscreenCanvas
+    ? await (canvas as OffscreenCanvas).convertToBlob({ type: 'image/webp', quality: COVER_WEBP_QUALITY })
+    : await new Promise<Blob>((resolve, reject) => {
+        (canvas as HTMLCanvasElement).toBlob(
+          (result: Blob | null) => (result ? resolve(result) : reject(new Error('Image encoding failed.'))),
+          'image/webp',
+          COVER_WEBP_QUALITY,
+        );
+      });
   return { blob, width, height };
 }
 

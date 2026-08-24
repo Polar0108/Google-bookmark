@@ -1,4 +1,5 @@
 import { removeBookmarkEnhancements } from '../src/data/database';
+import { captureNativeBookmarkCover } from '../src/services/nativeBookmarkCover';
 import type { PageMetadata } from '../src/types/bookmark';
 import { isRuntimeMessage } from '../src/types/messages';
 import { getNavigationSafety } from '../src/utils/url';
@@ -14,7 +15,9 @@ export default defineBackground(() => {
     void chrome.sidePanel.open({ windowId: tab.windowId });
   });
 
-  chrome.bookmarks.onCreated.addListener(broadcastBookmarksChanged);
+  chrome.bookmarks.onCreated.addListener((id, node) => {
+    void handleBookmarkCreated(id, node);
+  });
   chrome.bookmarks.onChanged.addListener(broadcastBookmarksChanged);
   chrome.bookmarks.onMoved.addListener(broadcastBookmarksChanged);
   chrome.bookmarks.onChildrenReordered.addListener(broadcastBookmarksChanged);
@@ -45,6 +48,20 @@ export default defineBackground(() => {
 
 function broadcastBookmarksChanged(): void {
   void chrome.runtime.sendMessage({ type: 'BOOKMARKS_CHANGED' }).catch(() => undefined);
+}
+
+async function handleBookmarkCreated(
+  id: string,
+  node: chrome.bookmarks.BookmarkTreeNode,
+): Promise<void> {
+  try {
+    await captureNativeBookmarkCover(id, node);
+  } catch {
+    // The native bookmark must remain available even when Chrome refuses a
+    // screenshot (for example on internal pages or during a tab switch).
+  } finally {
+    broadcastBookmarksChanged();
+  }
 }
 
 async function openBookmark(url: string, newTab: boolean): Promise<void> {

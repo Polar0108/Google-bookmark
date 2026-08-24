@@ -6,6 +6,8 @@ interface BookmarkViewportProps {
   viewMode: ViewMode;
   selectedIds: Set<string>;
   selectMode: boolean;
+  coverOverrides?: ReadonlyMap<string, string>;
+  recapturingId?: string | undefined;
   onOpen: (bookmark: BookmarkViewModel, newTab: boolean) => void;
   onEdit: (bookmark: BookmarkViewModel) => void;
   onRecapture: (bookmark: BookmarkViewModel) => void;
@@ -33,6 +35,9 @@ export function BookmarkViewport(props: BookmarkViewportProps) {
             viewMode={props.viewMode}
             selected={props.selectedIds.has(bookmark.id)}
             selectMode={props.selectMode}
+            coverOverrideUrl={props.coverOverrides?.get(bookmark.id)}
+            refreshing={props.recapturingId === bookmark.id}
+            refreshDisabled={props.recapturingId !== undefined}
             onOpen={props.onOpen}
             onEdit={props.onEdit}
             onRecapture={props.onRecapture}
