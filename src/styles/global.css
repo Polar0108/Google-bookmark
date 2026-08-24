@@ -183,6 +183,10 @@ button:disabled { cursor: not-allowed; opacity: .5; }
   .bookmark-card__copy strong { font-size: 11px; }
 }
 
+@container (min-width: 688px) {
+  .bookmark-collection--masonry { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
